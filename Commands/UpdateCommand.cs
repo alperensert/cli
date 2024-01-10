@@ -55,25 +55,39 @@ public sealed class UpdateCommand : CliCommand
 
         if (!response.IsSuccessStatusCode)
         {
-            AnsiConsole.MarkupLine("[bold red]Error occured while downloading the file.[/]");
+            AnsiConsole.MarkupLine("[bold red]Error occured while downloading the tool.[/]");
             return;
         }
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
         var isToolDownloaded = await DownloadNewVersionAsync(nupkgFileName, response, stream, cancellationToken);
+        if (!isToolDownloaded)
+        {
+            AnsiConsole.MarkupLine("[bold red]Error occured while downloading the tool.[/]");
+            return;
+        }
 
         AnsiConsole.MarkupLine("[bold green]Download completed![/]");
 
         var isToolUpdated = await UpdateTheToolAsync(cancellationToken);
+        AnsiConsole.MarkupLine(!isToolUpdated
+            ? "[bold red]Error occured while updating the tool.[/]"
+            : $"[bold green]'quasm' tool is updated from {currentVersion} to {latestVersion} successfully.[/]");
 
         var downloadedFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nupkgFileName);
         if (File.Exists(downloadedFilePath))
             File.Delete(downloadedFilePath);
-        AnsiConsole.MarkupLine(
-            $"[bold green]'quasm' tool is updated from {currentVersion} to {latestVersion} successfully.[/]");
     }
 
+    /// <summary>
+    ///     Updates the tool asynchronously.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token used to cancel the operation.</param>
+    /// <returns>
+    ///     A task representing the asynchronous operation. The task will contain true if the tool update was successful;
+    ///     otherwise, false.
+    /// </returns>
     private static async Task<bool> UpdateTheToolAsync(CancellationToken cancellationToken = default)
     {
         return await AnsiConsole.Status()
@@ -107,6 +121,17 @@ public sealed class UpdateCommand : CliCommand
             });
     }
 
+    /// <summary>
+    ///     Downloads a new version of a file asynchronously.
+    /// </summary>
+    /// <param name="fileName">The name of the file.</param>
+    /// <param name="response">The HTTP response message.</param>
+    /// <param name="stream">The stream containing the file data.</param>
+    /// <param name="cancellationToken">The cancellation token (optional).</param>
+    /// <returns>
+    ///     A task representing the asynchronous operation.
+    ///     The task result is true if the download is successful; otherwise, false.
+    /// </returns>
     private static async Task<bool> DownloadNewVersionAsync(string fileName, HttpResponseMessage response, Stream stream,
         CancellationToken cancellationToken = default)
     {
