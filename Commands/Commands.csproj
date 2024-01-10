@@ -16,4 +16,8 @@
         <ProjectReference Include="..\Utilities\Utilities.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Octokit" Version="9.1.0" />
+    </ItemGroup>
+
 </Project>
